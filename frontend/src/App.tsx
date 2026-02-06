@@ -540,6 +540,7 @@ function AuthPage(props: {
               required
               type="password"
               placeholder="Password"
+              maxLength={72}
               value={authPassword}
               onChange={(event) => setAuthPassword(event.target.value)}
             />
