@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 type Reply = {
   id: number;
@@ -122,8 +123,12 @@ export default function App() {
   }
 
   useEffect(() => {
-    void loadThreads();
-  }, []);
+    if (isAuthed) {
+      void loadThreads();
+    } else {
+      setThreads([]);
+    }
+  }, [isAuthed]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -281,7 +286,7 @@ export default function App() {
     }
   }
 
-  async function handleAuthSubmit(event: FormEvent) {
+  async function handleAuthSubmit(event: FormEvent, onSuccess?: () => void) {
     event.preventDefault();
     setAuthError(null);
     setAuthMessage(null);
@@ -297,15 +302,31 @@ export default function App() {
           password: authPassword,
         }),
       });
+      const payload = (await response.json().catch(() => null)) as
+        | { detail?: unknown; access_token?: string; user?: AuthUser }
+        | null;
       if (!response.ok) {
-        const payload = (await response.json()) as { detail?: string };
-        throw new Error(payload.detail || "Authentication failed.");
+        const detail = payload?.detail;
+        let detailText = "Authentication failed.";
+        if (typeof detail === "string") {
+          detailText = detail;
+        } else if (Array.isArray(detail)) {
+          detailText = detail
+            .map((item) => (typeof item?.msg === "string" ? item.msg : JSON.stringify(item)))
+            .join(", ");
+        } else if (detail) {
+          detailText = JSON.stringify(detail);
+        }
+        throw new Error(detailText);
       }
-      const payload = (await response.json()) as { access_token: string; user: AuthUser };
+      if (!payload?.access_token || !payload.user) {
+        throw new Error("Authentication failed.");
+      }
       setAuthToken(payload.access_token);
       setAuthUser(payload.user);
       setAuthMessage(authMode === "signin" ? "Signed in successfully." : "Account created.");
       setAuthPassword("");
+      onSuccess?.();
     } catch (authErr) {
       setAuthError(authErr instanceof Error ? authErr.message : "Authentication failed.");
     } finally {
@@ -321,149 +342,336 @@ export default function App() {
   }
 
   return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/auth"
+          element={
+            <AuthPage
+              theme={theme}
+              setTheme={setTheme}
+              authMode={authMode}
+              setAuthMode={setAuthMode}
+              authName={authName}
+              setAuthName={setAuthName}
+              authEmail={authEmail}
+              setAuthEmail={setAuthEmail}
+              authPassword={authPassword}
+              setAuthPassword={setAuthPassword}
+              authMessage={authMessage}
+              authError={authError}
+              authLoading={authLoading}
+              isAuthed={isAuthed}
+              onSubmit={handleAuthSubmit}
+            />
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <RequireAuth isAuthed={isAuthed}>
+              <ForumPage
+                theme={theme}
+                setTheme={setTheme}
+                authUser={authUser}
+                onSignOut={handleSignOut}
+                threadTitle={threadTitle}
+                setThreadTitle={setThreadTitle}
+                threadBody={threadBody}
+                setThreadBody={setThreadBody}
+                threadName={threadName}
+                setThreadName={setThreadName}
+                threadAnonymous={threadAnonymous}
+                setThreadAnonymous={setThreadAnonymous}
+                error={error}
+                loading={loading}
+                threads={threads}
+                replyBodyByThread={replyBodyByThread}
+                setReplyBodyByThread={setReplyBodyByThread}
+                replyNameByThread={replyNameByThread}
+                setReplyNameByThread={setReplyNameByThread}
+                replyAnonymousByThread={replyAnonymousByThread}
+                setReplyAnonymousByThread={setReplyAnonymousByThread}
+                replyTargetByThread={replyTargetByThread}
+                setReplyTargetByThread={setReplyTargetByThread}
+                threadTokens={threadTokens}
+                replyTokens={replyTokens}
+                onCreateThread={handleCreateThread}
+                onCreateReply={handleCreateReply}
+                onDeleteThread={handleDeleteThread}
+                onDeleteReply={handleDeleteReply}
+              />
+            </RequireAuth>
+          }
+        />
+        <Route path="*" element={<Navigate to={isAuthed ? "/" : "/auth"} replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function RequireAuth(props: { isAuthed: boolean; children: JSX.Element }) {
+  const { isAuthed, children } = props;
+  if (!isAuthed) return <Navigate to="/auth" replace />;
+  return children;
+}
+
+function PageHeader(props: {
+  theme: "light" | "dark";
+  setTheme: (value: "light" | "dark") => void;
+  showSignOut: boolean;
+  onSignOut?: () => void;
+}) {
+  const { theme, setTheme, showSignOut, onSignOut } = props;
+
+  return (
+    <header className="hero">
+      <div className="hero-top">
+        <p className="eyebrow">Public board</p>
+        <div className="hero-actions">
+          {showSignOut ? (
+            <button type="button" className="ghost" onClick={onSignOut}>
+              Sign out
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          >
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
+        </div>
+      </div>
+      <h1>SpeakUpProject Forum</h1>
+      <p className="subtitle">Post as Anonymous or share your name. Reply directly to any comment.</p>
+    </header>
+  );
+}
+
+function AuthPage(props: {
+  theme: "light" | "dark";
+  setTheme: (value: "light" | "dark") => void;
+  authMode: "signin" | "signup";
+  setAuthMode: (value: "signin" | "signup") => void;
+  authName: string;
+  setAuthName: (value: string) => void;
+  authEmail: string;
+  setAuthEmail: (value: string) => void;
+  authPassword: string;
+  setAuthPassword: (value: string) => void;
+  authMessage: string | null;
+  authError: string | null;
+  authLoading: boolean;
+  isAuthed: boolean;
+  onSubmit: (event: FormEvent, onSuccess?: () => void) => void;
+}) {
+  const {
+    theme,
+    setTheme,
+    authMode,
+    setAuthMode,
+    authName,
+    setAuthName,
+    authEmail,
+    setAuthEmail,
+    authPassword,
+    setAuthPassword,
+    authMessage,
+    authError,
+    authLoading,
+    isAuthed,
+    onSubmit,
+  } = props;
+  const navigate = useNavigate();
+
+  if (isAuthed) return <Navigate to="/" replace />;
+
+  return (
     <main className="page">
-      <header className="hero">
-        <div className="hero-top">
-          <p className="eyebrow">Public board</p>
-          <div className="hero-actions">
-            {isAuthed ? (
-              <button type="button" className="ghost" onClick={handleSignOut}>
-                Sign out
-              </button>
-            ) : null}
+      <PageHeader theme={theme} setTheme={setTheme} showSignOut={false} />
+
+      <section className="card auth-card">
+        <div className="auth-header">
+          <div>
+            <p className="eyebrow">Account</p>
+            <h2>{authMode === "signin" ? "Welcome back" : "Create your account"}</h2>
+            <p className="subtitle">
+              {authMode === "signin"
+                ? "Sign in to create threads and reply to others."
+                : "Sign up to start threads and follow responses."}
+            </p>
+          </div>
+          <div className="auth-tabs">
             <button
               type="button"
-              className="theme-toggle"
-              onClick={() => setTheme((prev) => (prev === "light" ? "dark" : "light"))}
+              className={`auth-tab ${authMode === "signin" ? "active" : ""}`}
+              onClick={() => setAuthMode("signin")}
             >
-              {theme === "light" ? "Dark mode" : "Light mode"}
+              Sign in
+            </button>
+            <button
+              type="button"
+              className={`auth-tab ${authMode === "signup" ? "active" : ""}`}
+              onClick={() => setAuthMode("signup")}
+            >
+              Sign up
             </button>
           </div>
         </div>
-        <h1>SpeakUpProject Forum</h1>
-        <p className="subtitle">Post as Anonymous or share your name. Reply directly to any comment.</p>
-      </header>
-
-      {!isAuthed && (
-        <section className="card auth-card">
-          <div className="auth-header">
-            <div>
-              <p className="eyebrow">Account</p>
-              <h2>{authMode === "signin" ? "Welcome back" : "Create your account"}</h2>
-              <p className="subtitle">
-                {authMode === "signin"
-                  ? "Sign in to create threads and reply to others."
-                  : "Sign up to start threads and follow responses."}
-              </p>
-            </div>
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={`auth-tab ${authMode === "signin" ? "active" : ""}`}
-                onClick={() => setAuthMode("signin")}
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                className={`auth-tab ${authMode === "signup" ? "active" : ""}`}
-                onClick={() => setAuthMode("signup")}
-              >
-                Sign up
-              </button>
-            </div>
-          </div>
-          <form onSubmit={handleAuthSubmit} className="stack auth-form">
-            <div className="stack">
-              <input
-                required
-                minLength={3}
-                maxLength={60}
-                placeholder="Username"
-                value={authName}
-                onChange={(event) => setAuthName(event.target.value)}
-              />
-              <input
-                required
-                type="email"
-                placeholder="Email address"
-                value={authEmail}
-                onChange={(event) => setAuthEmail(event.target.value)}
-              />
-              <input
-                required
-                type="password"
-                placeholder="Password"
-                value={authPassword}
-                onChange={(event) => setAuthPassword(event.target.value)}
-              />
-            </div>
-            <div className="actions">
-              <button type="submit" disabled={authLoading}>
-                {authLoading ? "Please wait..." : authMode === "signin" ? "Sign in" : "Sign up"}
-              </button>
-              {authMessage && <span className="auth-message">{authMessage}</span>}
-              {authError && <span className="error">{authError}</span>}
-            </div>
-          </form>
-        </section>
-      )}
-
-      {isAuthed && (
-        <section className="card auth-card">
-          <div>
-            <p className="eyebrow">Signed in</p>
-            <h2>Welcome, {authUser?.username}</h2>
-            <p className="subtitle">{authUser?.email}</p>
-          </div>
-        </section>
-      )}
-
-      {!isAuthed && (
-        <section className="card">
-          <h2>Start a Thread</h2>
-          <p className="subtitle">Sign in to create a thread and reply to others.</p>
-        </section>
-      )}
-
-      {isAuthed && (
-        <section className="card">
-          <h2>Start a Thread</h2>
-          <form onSubmit={handleCreateThread} className="stack">
+        <form onSubmit={(event) => onSubmit(event, () => navigate("/"))} className="stack auth-form">
+          <div className="stack">
             <input
               required
               minLength={3}
-              maxLength={200}
-              placeholder="Title"
-              value={threadTitle}
-              onChange={(event) => setThreadTitle(event.target.value)}
-            />
-            <textarea
-              required
-              minLength={1}
-              maxLength={4000}
-              placeholder="What's on your mind?"
-              value={threadBody}
-              onChange={(event) => setThreadBody(event.target.value)}
+              maxLength={60}
+              placeholder="Username"
+              value={authName}
+              onChange={(event) => setAuthName(event.target.value)}
             />
             <input
-              placeholder="Display name (optional)"
-              disabled={threadAnonymous}
-              value={threadName}
-              onChange={(event) => setThreadName(event.target.value)}
+              required
+              type="email"
+              placeholder="Email address"
+              value={authEmail}
+              onChange={(event) => setAuthEmail(event.target.value)}
             />
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={threadAnonymous}
-                onChange={(event) => setThreadAnonymous(event.target.checked)}
-              />
-              Post anonymously
-            </label>
-            <button type="submit">Post Thread</button>
-          </form>
-        </section>
-      )}
+            <input
+              required
+              type="password"
+              placeholder="Password"
+              value={authPassword}
+              onChange={(event) => setAuthPassword(event.target.value)}
+            />
+          </div>
+          <div className="actions">
+            <button type="submit" disabled={authLoading}>
+              {authLoading ? "Please wait..." : authMode === "signin" ? "Sign in" : "Sign up"}
+            </button>
+            {authMessage && <span className="auth-message">{authMessage}</span>}
+            {authError && <span className="error">{authError}</span>}
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+}
+
+function ForumPage(props: {
+  theme: "light" | "dark";
+  setTheme: (value: "light" | "dark") => void;
+  authUser: AuthUser | null;
+  onSignOut: () => void;
+  threadTitle: string;
+  setThreadTitle: (value: string) => void;
+  threadBody: string;
+  setThreadBody: (value: string) => void;
+  threadName: string;
+  setThreadName: (value: string) => void;
+  threadAnonymous: boolean;
+  setThreadAnonymous: (value: boolean) => void;
+  error: string | null;
+  loading: boolean;
+  threads: Thread[];
+  replyBodyByThread: Record<number, string>;
+  setReplyBodyByThread: (value: Record<number, string> | ((prev: Record<number, string>) => Record<number, string>)) => void;
+  replyNameByThread: Record<number, string>;
+  setReplyNameByThread: (value: Record<number, string> | ((prev: Record<number, string>) => Record<number, string>)) => void;
+  replyAnonymousByThread: Record<number, boolean>;
+  setReplyAnonymousByThread: (
+    value: Record<number, boolean> | ((prev: Record<number, boolean>) => Record<number, boolean>)
+  ) => void;
+  replyTargetByThread: Record<number, number | null>;
+  setReplyTargetByThread: (
+    value: Record<number, number | null> | ((prev: Record<number, number | null>) => Record<number, number | null>)
+  ) => void;
+  threadTokens: Record<number, string>;
+  replyTokens: Record<number, string>;
+  onCreateThread: (event: FormEvent) => void;
+  onCreateReply: (threadId: number, event: FormEvent) => void;
+  onDeleteThread: (threadId: number) => void;
+  onDeleteReply: (threadId: number, replyId: number) => void;
+}) {
+  const {
+    theme,
+    setTheme,
+    authUser,
+    onSignOut,
+    threadTitle,
+    setThreadTitle,
+    threadBody,
+    setThreadBody,
+    threadName,
+    setThreadName,
+    threadAnonymous,
+    setThreadAnonymous,
+    error,
+    loading,
+    threads,
+    replyBodyByThread,
+    setReplyBodyByThread,
+    replyNameByThread,
+    setReplyNameByThread,
+    replyAnonymousByThread,
+    setReplyAnonymousByThread,
+    replyTargetByThread,
+    setReplyTargetByThread,
+    threadTokens,
+    replyTokens,
+    onCreateThread,
+    onCreateReply,
+    onDeleteThread,
+    onDeleteReply,
+  } = props;
+
+  return (
+    <main className="page">
+      <PageHeader theme={theme} setTheme={setTheme} showSignOut={true} onSignOut={onSignOut} />
+
+      <section className="card auth-card">
+        <div>
+          <p className="eyebrow">Signed in</p>
+          <h2>Welcome, {authUser?.username}</h2>
+          <p className="subtitle">{authUser?.email}</p>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Start a Thread</h2>
+        <form onSubmit={onCreateThread} className="stack">
+          <input
+            required
+            minLength={3}
+            maxLength={200}
+            placeholder="Title"
+            value={threadTitle}
+            onChange={(event) => setThreadTitle(event.target.value)}
+          />
+          <textarea
+            required
+            minLength={1}
+            maxLength={4000}
+            placeholder="What's on your mind?"
+            value={threadBody}
+            onChange={(event) => setThreadBody(event.target.value)}
+          />
+          <input
+            placeholder="Display name (optional)"
+            disabled={threadAnonymous}
+            value={threadName}
+            onChange={(event) => setThreadName(event.target.value)}
+          />
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={threadAnonymous}
+              onChange={(event) => setThreadAnonymous(event.target.checked)}
+            />
+            Post anonymously
+          </label>
+          <button type="submit">Post Thread</button>
+        </form>
+      </section>
 
       {error && <p className="error">{error}</p>}
       {loading && <p>Loading...</p>}
@@ -501,12 +709,12 @@ export default function App() {
                 [thread.id]: value,
               }))
             }
-            canInteract={isAuthed}
-            canDeleteThread={Boolean(threadTokens[thread.id]) && isAuthed}
-            canDeleteReply={(replyId) => Boolean(replyTokens[replyId]) && isAuthed}
-            onDeleteThread={() => handleDeleteThread(thread.id)}
-            onDeleteReply={(replyId) => handleDeleteReply(thread.id, replyId)}
-            onSubmitReply={(event) => handleCreateReply(thread.id, event)}
+            canInteract={true}
+            canDeleteThread={Boolean(threadTokens[thread.id])}
+            canDeleteReply={(replyId) => Boolean(replyTokens[replyId])}
+            onDeleteThread={() => onDeleteThread(thread.id)}
+            onDeleteReply={(replyId) => onDeleteReply(thread.id, replyId)}
+            onSubmitReply={(event) => onCreateReply(thread.id, event)}
           />
         ))}
       </section>
