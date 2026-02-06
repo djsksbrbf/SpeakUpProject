@@ -104,6 +104,7 @@ export default function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => window.localStorage.getItem(authTokenStorageKey));
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => readStoredAuthUser());
   const isAuthed = Boolean(authToken && authUser);
+  const [threadSuccess, setThreadSuccess] = useState<string | null>(null);
 
   async function loadThreads() {
     setLoading(true);
@@ -160,6 +161,7 @@ export default function App() {
   async function handleCreateThread(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    setThreadSuccess(null);
     if (!authToken) {
       setError("Please sign in to create a thread.");
       return;
@@ -191,6 +193,7 @@ export default function App() {
       setThreadTitle("");
       setThreadBody("");
       setThreadAnonymous(true);
+      setThreadSuccess("Thread successfully posted.");
       await loadThreads();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "Unknown error.");
@@ -410,6 +413,7 @@ export default function App() {
                 threadAnonymous={threadAnonymous}
                 setThreadAnonymous={setThreadAnonymous}
                 error={error}
+                successMessage={threadSuccess}
                 onCreateThread={handleCreateThread}
               />
             </RequireAuth>
@@ -729,6 +733,7 @@ function AddThreadPage(props: {
   threadAnonymous: boolean;
   setThreadAnonymous: (value: boolean) => void;
   error: string | null;
+  successMessage: string | null;
   onCreateThread: (event: FormEvent) => void;
 }) {
   const {
@@ -743,6 +748,7 @@ function AddThreadPage(props: {
     threadAnonymous,
     setThreadAnonymous,
     error,
+    successMessage,
     onCreateThread,
   } = props;
 
@@ -758,6 +764,9 @@ function AddThreadPage(props: {
           <p className="subtitle">{authUser?.email}</p>
         </div>
       </section>
+
+      {successMessage && <p className="success">{successMessage}</p>}
+      {error && <p className="error">{error}</p>}
 
       <section className="card">
         <h2>Start a Thread</h2>
@@ -789,8 +798,6 @@ function AddThreadPage(props: {
           <button type="submit">Post Thread</button>
         </form>
       </section>
-
-      {error && <p className="error">{error}</p>}
     </main>
   );
 }
