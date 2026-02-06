@@ -376,12 +376,6 @@ export default function App() {
                 setTheme={setTheme}
                 authUser={authUser}
                 onSignOut={handleSignOut}
-                threadTitle={threadTitle}
-                setThreadTitle={setThreadTitle}
-                threadBody={threadBody}
-                setThreadBody={setThreadBody}
-                threadAnonymous={threadAnonymous}
-                setThreadAnonymous={setThreadAnonymous}
                 error={error}
                 loading={loading}
                 threads={threads}
@@ -393,10 +387,30 @@ export default function App() {
                 setReplyTargetByThread={setReplyTargetByThread}
                 threadTokens={threadTokens}
                 replyTokens={replyTokens}
-                onCreateThread={handleCreateThread}
                 onCreateReply={handleCreateReply}
                 onDeleteThread={handleDeleteThread}
                 onDeleteReply={handleDeleteReply}
+              />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/add"
+          element={
+            <RequireAuth isAuthed={isAuthed}>
+              <AddThreadPage
+                theme={theme}
+                setTheme={setTheme}
+                authUser={authUser}
+                onSignOut={handleSignOut}
+                threadTitle={threadTitle}
+                setThreadTitle={setThreadTitle}
+                threadBody={threadBody}
+                setThreadBody={setThreadBody}
+                threadAnonymous={threadAnonymous}
+                setThreadAnonymous={setThreadAnonymous}
+                error={error}
+                onCreateThread={handleCreateThread}
               />
             </RequireAuth>
           }
@@ -468,6 +482,11 @@ function NavBar(props: {
           <a className="nav-link" href={isAuthed ? "/" : "/auth"}>
             {isAuthed ? "Forum" : "Sign in"}
           </a>
+          {isAuthed ? (
+            <a className="nav-link" href="/add">
+              Add
+            </a>
+          ) : null}
           <button
             type="button"
             className="ghost nav-button"
@@ -603,12 +622,6 @@ function ForumPage(props: {
   setTheme: (value: "light" | "dark") => void;
   authUser: AuthUser | null;
   onSignOut: () => void;
-  threadTitle: string;
-  setThreadTitle: (value: string) => void;
-  threadBody: string;
-  setThreadBody: (value: string) => void;
-  threadAnonymous: boolean;
-  setThreadAnonymous: (value: boolean) => void;
   error: string | null;
   loading: boolean;
   threads: Thread[];
@@ -624,10 +637,99 @@ function ForumPage(props: {
   ) => void;
   threadTokens: Record<number, string>;
   replyTokens: Record<number, string>;
-  onCreateThread: (event: FormEvent) => void;
   onCreateReply: (threadId: number, event: FormEvent) => void;
   onDeleteThread: (threadId: number) => void;
   onDeleteReply: (threadId: number, replyId: number) => void;
+}) {
+  const {
+    theme,
+    setTheme,
+    authUser,
+    onSignOut,
+    error,
+    loading,
+    threads,
+    replyBodyByThread,
+    setReplyBodyByThread,
+    replyAnonymousByThread,
+    setReplyAnonymousByThread,
+    replyTargetByThread,
+    setReplyTargetByThread,
+    threadTokens,
+    replyTokens,
+    onCreateReply,
+    onDeleteThread,
+    onDeleteReply,
+  } = props;
+
+  return (
+    <main className="page">
+      <NavBar isAuthed={true} onSignOut={onSignOut} theme={theme} setTheme={setTheme} />
+      <PageHeader theme={theme} setTheme={setTheme} showSignOut={true} onSignOut={onSignOut} />
+
+      <section className="card auth-card">
+        <div>
+          <p className="eyebrow">Signed in</p>
+          <h2>Welcome, {authUser?.username}</h2>
+          <p className="subtitle">{authUser?.email}</p>
+        </div>
+      </section>
+
+      {error && <p className="error">{error}</p>}
+      {loading && <p>Loading...</p>}
+
+      <section className="threads">
+        {threads.map((thread) => (
+          <ThreadItem
+            key={thread.id}
+            thread={thread}
+            replyBody={replyBodyByThread[thread.id] || ""}
+            setReplyBody={(value) =>
+              setReplyBodyByThread((prev) => ({
+                ...prev,
+                [thread.id]: value,
+              }))
+            }
+            replyAnonymous={replyAnonymousByThread[thread.id] ?? true}
+            setReplyAnonymous={(value) =>
+              setReplyAnonymousByThread((prev) => ({
+                ...prev,
+                [thread.id]: value,
+              }))
+            }
+            replyTarget={replyTargetByThread[thread.id] ?? null}
+            setReplyTarget={(value) =>
+              setReplyTargetByThread((prev) => ({
+                ...prev,
+                [thread.id]: value,
+              }))
+            }
+            canInteract={true}
+            canDeleteThread={Boolean(threadTokens[thread.id])}
+            canDeleteReply={(replyId) => Boolean(replyTokens[replyId])}
+            onDeleteThread={() => onDeleteThread(thread.id)}
+            onDeleteReply={(replyId) => onDeleteReply(thread.id, replyId)}
+            onSubmitReply={(event) => onCreateReply(thread.id, event)}
+          />
+        ))}
+      </section>
+    </main>
+  );
+}
+
+function AddThreadPage(props: {
+  theme: "light" | "dark";
+  setTheme: (value: "light" | "dark") => void;
+  authUser: AuthUser | null;
+  onSignOut: () => void;
+  threadTitle: string;
+  setThreadTitle: (value: string) => void;
+  threadBody: string;
+  setThreadBody: (value: string) => void;
+  threadAnonymous: boolean;
+  setThreadAnonymous: (value: boolean) => void;
+  error: string | null;
+  onCreateThread: (event: FormEvent) => void;
 }) {
   const {
     theme,
@@ -641,20 +743,7 @@ function ForumPage(props: {
     threadAnonymous,
     setThreadAnonymous,
     error,
-    loading,
-    threads,
-    replyBodyByThread,
-    setReplyBodyByThread,
-    replyAnonymousByThread,
-    setReplyAnonymousByThread,
-    replyTargetByThread,
-    setReplyTargetByThread,
-    threadTokens,
-    replyTokens,
     onCreateThread,
-    onCreateReply,
-    onDeleteThread,
-    onDeleteReply,
   } = props;
 
   return (
@@ -702,43 +791,6 @@ function ForumPage(props: {
       </section>
 
       {error && <p className="error">{error}</p>}
-      {loading && <p>Loading...</p>}
-
-      <section className="threads">
-        {threads.map((thread) => (
-          <ThreadItem
-            key={thread.id}
-            thread={thread}
-            replyBody={replyBodyByThread[thread.id] || ""}
-            setReplyBody={(value) =>
-              setReplyBodyByThread((prev) => ({
-                ...prev,
-                [thread.id]: value,
-              }))
-            }
-            replyAnonymous={replyAnonymousByThread[thread.id] ?? true}
-            setReplyAnonymous={(value) =>
-              setReplyAnonymousByThread((prev) => ({
-                ...prev,
-                [thread.id]: value,
-              }))
-            }
-            replyTarget={replyTargetByThread[thread.id] ?? null}
-            setReplyTarget={(value) =>
-              setReplyTargetByThread((prev) => ({
-                ...prev,
-                [thread.id]: value,
-              }))
-            }
-            canInteract={true}
-            canDeleteThread={Boolean(threadTokens[thread.id])}
-            canDeleteReply={(replyId) => Boolean(replyTokens[replyId])}
-            onDeleteThread={() => onDeleteThread(thread.id)}
-            onDeleteReply={(replyId) => onDeleteReply(thread.id, replyId)}
-            onSubmitReply={(event) => onCreateReply(thread.id, event)}
-          />
-        ))}
-      </section>
     </main>
   );
 }
