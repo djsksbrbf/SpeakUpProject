@@ -87,11 +87,9 @@ export default function App() {
 
   const [threadTitle, setThreadTitle] = useState("");
   const [threadBody, setThreadBody] = useState("");
-  const [threadName, setThreadName] = useState("");
   const [threadAnonymous, setThreadAnonymous] = useState(true);
 
   const [replyBodyByThread, setReplyBodyByThread] = useState<Record<number, string>>({});
-  const [replyNameByThread, setReplyNameByThread] = useState<Record<number, string>>({});
   const [replyAnonymousByThread, setReplyAnonymousByThread] = useState<Record<number, boolean>>({});
   const [replyTargetByThread, setReplyTargetByThread] = useState<Record<number, number | null>>({});
   const [threadTokens, setThreadTokens] = useState<Record<number, string>>(() => readTokenMap(threadTokenStorageKey));
@@ -168,7 +166,7 @@ export default function App() {
     }
     try {
       const ownerToken = generateOwnerToken();
-      const authorName = threadAnonymous ? null : threadName || authUser?.username || null;
+      const authorName = threadAnonymous ? null : authUser?.username || null;
       const response = await fetch(`${apiBaseUrl}/threads`, {
         method: "POST",
         headers: {
@@ -192,7 +190,6 @@ export default function App() {
 
       setThreadTitle("");
       setThreadBody("");
-      setThreadName("");
       setThreadAnonymous(true);
       await loadThreads();
     } catch (createError) {
@@ -210,9 +207,7 @@ export default function App() {
 
     try {
       const ownerToken = generateOwnerToken();
-      const replyName = replyAnonymousByThread[threadId]
-        ? null
-        : replyNameByThread[threadId] || authUser?.username || null;
+      const replyName = replyAnonymousByThread[threadId] ? null : authUser?.username || null;
       const response = await fetch(`${apiBaseUrl}/threads/${threadId}/replies`, {
         method: "POST",
         headers: {
@@ -235,7 +230,6 @@ export default function App() {
       }));
 
       setReplyBodyByThread((prev) => ({ ...prev, [threadId]: "" }));
-      setReplyNameByThread((prev) => ({ ...prev, [threadId]: "" }));
       setReplyAnonymousByThread((prev) => ({ ...prev, [threadId]: true }));
       setReplyTargetByThread((prev) => ({ ...prev, [threadId]: null }));
       await loadThreads();
@@ -386,8 +380,6 @@ export default function App() {
                 setThreadTitle={setThreadTitle}
                 threadBody={threadBody}
                 setThreadBody={setThreadBody}
-                threadName={threadName}
-                setThreadName={setThreadName}
                 threadAnonymous={threadAnonymous}
                 setThreadAnonymous={setThreadAnonymous}
                 error={error}
@@ -395,8 +387,6 @@ export default function App() {
                 threads={threads}
                 replyBodyByThread={replyBodyByThread}
                 setReplyBodyByThread={setReplyBodyByThread}
-                replyNameByThread={replyNameByThread}
-                setReplyNameByThread={setReplyNameByThread}
                 replyAnonymousByThread={replyAnonymousByThread}
                 setReplyAnonymousByThread={setReplyAnonymousByThread}
                 replyTargetByThread={replyTargetByThread}
@@ -576,8 +566,6 @@ function ForumPage(props: {
   setThreadTitle: (value: string) => void;
   threadBody: string;
   setThreadBody: (value: string) => void;
-  threadName: string;
-  setThreadName: (value: string) => void;
   threadAnonymous: boolean;
   setThreadAnonymous: (value: boolean) => void;
   error: string | null;
@@ -585,8 +573,6 @@ function ForumPage(props: {
   threads: Thread[];
   replyBodyByThread: Record<number, string>;
   setReplyBodyByThread: (value: Record<number, string> | ((prev: Record<number, string>) => Record<number, string>)) => void;
-  replyNameByThread: Record<number, string>;
-  setReplyNameByThread: (value: Record<number, string> | ((prev: Record<number, string>) => Record<number, string>)) => void;
   replyAnonymousByThread: Record<number, boolean>;
   setReplyAnonymousByThread: (
     value: Record<number, boolean> | ((prev: Record<number, boolean>) => Record<number, boolean>)
@@ -611,8 +597,6 @@ function ForumPage(props: {
     setThreadTitle,
     threadBody,
     setThreadBody,
-    threadName,
-    setThreadName,
     threadAnonymous,
     setThreadAnonymous,
     error,
@@ -620,8 +604,6 @@ function ForumPage(props: {
     threads,
     replyBodyByThread,
     setReplyBodyByThread,
-    replyNameByThread,
-    setReplyNameByThread,
     replyAnonymousByThread,
     setReplyAnonymousByThread,
     replyTargetByThread,
@@ -665,12 +647,6 @@ function ForumPage(props: {
             value={threadBody}
             onChange={(event) => setThreadBody(event.target.value)}
           />
-          <input
-            placeholder="Display name (optional)"
-            disabled={threadAnonymous}
-            value={threadName}
-            onChange={(event) => setThreadName(event.target.value)}
-          />
           <label className="checkbox">
             <input
               type="checkbox"
@@ -694,13 +670,6 @@ function ForumPage(props: {
             replyBody={replyBodyByThread[thread.id] || ""}
             setReplyBody={(value) =>
               setReplyBodyByThread((prev) => ({
-                ...prev,
-                [thread.id]: value,
-              }))
-            }
-            replyName={replyNameByThread[thread.id] || ""}
-            setReplyName={(value) =>
-              setReplyNameByThread((prev) => ({
                 ...prev,
                 [thread.id]: value,
               }))
@@ -736,8 +705,6 @@ function ThreadItem(props: {
   thread: Thread;
   replyBody: string;
   setReplyBody: (value: string) => void;
-  replyName: string;
-  setReplyName: (value: string) => void;
   replyAnonymous: boolean;
   setReplyAnonymous: (value: boolean) => void;
   replyTarget: number | null;
@@ -753,8 +720,6 @@ function ThreadItem(props: {
     thread,
     replyBody,
     setReplyBody,
-    replyName,
-    setReplyName,
     replyAnonymous,
     setReplyAnonymous,
     replyTarget,
@@ -831,12 +796,6 @@ function ThreadItem(props: {
             placeholder="Write a reply..."
             value={replyBody}
             onChange={(event) => setReplyBody(event.target.value)}
-          />
-          <input
-            placeholder="Display name (optional)"
-            disabled={replyAnonymous}
-            value={replyName}
-            onChange={(event) => setReplyName(event.target.value)}
           />
           <label className="checkbox">
             <input
