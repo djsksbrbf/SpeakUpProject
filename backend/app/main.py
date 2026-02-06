@@ -52,6 +52,12 @@ def create_access_token(user: User) -> str:
     return jwt.encode(payload, jwt_secret, algorithm=jwt_algorithm)
 
 
+def ensure_password_length(password: str) -> str:
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=400, detail="Password too long (max 72 bytes).")
+    return password
+
+
 def get_current_user(
     authorization: str | None = Header(default=None, alias="Authorization"),
     db: Session = Depends(get_db),
@@ -95,12 +101,13 @@ def health():
 def signup(payload: UserCreate, db: Session = Depends(get_db)):
     username = payload.username.strip()
     email = payload.email.strip().lower()
+    password = ensure_password_length(payload.password)
     if db.execute(select(User).where(User.username == username)).scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Username already exists.")
     if db.execute(select(User).where(User.email == email)).scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already exists.")
 
-    user = User(username=username, email=email, password_hash=pwd_context.hash(payload.password))
+    user = User(username=username, email=email, password_hash=pwd_context.hash(password))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -111,12 +118,13 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)):
 def signin(payload: UserSignin, db: Session = Depends(get_db)):
     email = payload.email.strip().lower() if payload.email else None
     username = payload.username.strip() if payload.username else None
+    password = ensure_password_length(payload.password)
     user = None
     if email:
         user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if not user and username:
         user = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
-    if not user or not pwd_context.verify(payload.password, user.password_hash):
+    if not user or not pwd_context.verify(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
     return AuthResponse(access_token=create_access_token(user), user=UserRead.model_validate(user))
 
