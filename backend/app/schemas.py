@@ -3,6 +3,34 @@ from datetime import datetime
 from pydantic import BaseModel, Field, model_validator
 
 
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=60)
+    email: str = Field(..., min_length=5, max_length=140)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class UserSignin(BaseModel):
+    username: str | None = Field(default=None, max_length=60)
+    email: str | None = Field(default=None, max_length=140)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class UserRead(BaseModel):
+    id: int
+    username: str
+    email: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserRead
+
+
 class ThreadCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
     body: str = Field(..., min_length=1, max_length=4000)

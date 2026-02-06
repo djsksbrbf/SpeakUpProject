@@ -1,14 +1,28 @@
 import os
 import secrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 
 from .db import Base, engine, get_db
-from .models import Reply, Thread
-from .schemas import ReplyCreate, ReplyCreateResponse, ReplyRead, ThreadCreate, ThreadCreateResponse, ThreadRead
+from .models import Reply, Thread, User
+from .schemas import (
+    AuthResponse,
+    ReplyCreate,
+    ReplyCreateResponse,
+    ReplyRead,
+    ThreadCreate,
+    ThreadCreateResponse,
+    ThreadRead,
+    UserCreate,
+    UserRead,
+    UserSignin,
+)
 
 app = FastAPI(title="Anonymous Threads API")
 
@@ -20,6 +34,42 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+jwt_secret = os.getenv("JWT_SECRET", "dev-secret")
+jwt_algorithm = "HS256"
+jwt_expiry_hours = 24 * 7
+
+
+def create_access_token(user: User) -> str:
+    expires = datetime.now(timezone.utc) + timedelta(hours=jwt_expiry_hours)
+    payload = {
+        "sub": str(user.id),
+        "username": user.username,
+        "email": user.email,
+        "exp": expires,
+    }
+    return jwt.encode(payload, jwt_secret, algorithm=jwt_algorithm)
+
+
+def get_current_user(
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    db: Session = Depends(get_db),
+) -> User:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, jwt_secret, algorithms=[jwt_algorithm])
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid authentication token.") from exc
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid authentication token.")
+    user = db.get(User, int(user_id))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found.")
+    return user
 
 
 @app.on_event("startup")
@@ -41,6 +91,41 @@ def health():
     return {"ok": True}
 
 
+@app.post("/auth/signup", response_model=AuthResponse, status_code=201)
+def signup(payload: UserCreate, db: Session = Depends(get_db)):
+    username = payload.username.strip()
+    email = payload.email.strip().lower()
+    if db.execute(select(User).where(User.username == username)).scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Username already exists.")
+    if db.execute(select(User).where(User.email == email)).scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Email already exists.")
+
+    user = User(username=username, email=email, password_hash=pwd_context.hash(payload.password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return AuthResponse(access_token=create_access_token(user), user=UserRead.model_validate(user))
+
+
+@app.post("/auth/signin", response_model=AuthResponse)
+def signin(payload: UserSignin, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower() if payload.email else None
+    username = payload.username.strip() if payload.username else None
+    user = None
+    if email:
+        user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if not user and username:
+        user = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
+    if not user or not pwd_context.verify(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+    return AuthResponse(access_token=create_access_token(user), user=UserRead.model_validate(user))
+
+
+@app.get("/auth/me", response_model=UserRead)
+def me(current_user: User = Depends(get_current_user)):
+    return UserRead.model_validate(current_user)
+
+
 @app.get("/threads", response_model=list[ThreadRead])
 def list_threads(db: Session = Depends(get_db)):
     threads = (
@@ -52,8 +137,12 @@ def list_threads(db: Session = Depends(get_db)):
 
 
 @app.post("/threads", response_model=ThreadCreateResponse, status_code=201)
-def create_thread(payload: ThreadCreate, db: Session = Depends(get_db)):
-    author_name = None if payload.is_anonymous else payload.author_name
+def create_thread(
+    payload: ThreadCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    author_name = None if payload.is_anonymous else (payload.author_name or current_user.username)
     owner_token = payload.owner_token or secrets.token_hex(16)
     thread = Thread(
         title=payload.title.strip(),
@@ -69,7 +158,12 @@ def create_thread(payload: ThreadCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/threads/{thread_id}/replies", response_model=ReplyCreateResponse, status_code=201)
-def create_reply(thread_id: int, payload: ReplyCreate, db: Session = Depends(get_db)):
+def create_reply(
+    thread_id: int,
+    payload: ReplyCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     thread = db.get(Thread, thread_id)
     if not thread:
         raise HTTPException(status_code=404, detail="Thread not found.")
@@ -79,7 +173,7 @@ def create_reply(thread_id: int, payload: ReplyCreate, db: Session = Depends(get
         if not parent_reply or parent_reply.thread_id != thread_id:
             raise HTTPException(status_code=400, detail="Invalid parent reply.")
 
-    author_name = None if payload.is_anonymous else payload.author_name
+    author_name = None if payload.is_anonymous else (payload.author_name or current_user.username)
     owner_token = payload.owner_token or secrets.token_hex(16)
     reply = Reply(
         thread_id=thread_id,
