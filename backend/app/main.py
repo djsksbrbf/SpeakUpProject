@@ -35,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 jwt_secret = os.getenv("JWT_SECRET", "dev-secret")
 jwt_algorithm = "HS256"
 jwt_expiry_hours = 24 * 7
