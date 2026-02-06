@@ -446,6 +446,46 @@ function PageHeader(props: {
   );
 }
 
+function NavBar(props: {
+  isAuthed: boolean;
+  onSignOut?: () => void;
+  theme: "light" | "dark";
+  setTheme: (value: "light" | "dark") => void;
+}) {
+  const { isAuthed, onSignOut, theme, setTheme } = props;
+
+  return (
+    <nav className="nav">
+      <div className="nav-inner">
+        <div className="brand">
+          <span className="brand-mark">SU</span>
+          <div>
+            <p className="brand-title">SpeakUpProject</p>
+            <p className="brand-subtitle">Community Forum</p>
+          </div>
+        </div>
+        <div className="nav-links">
+          <a className="nav-link" href={isAuthed ? "/" : "/auth"}>
+            {isAuthed ? "Forum" : "Sign in"}
+          </a>
+          <button
+            type="button"
+            className="ghost nav-button"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          >
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
+          {isAuthed ? (
+            <button type="button" className="ghost nav-button" onClick={onSignOut}>
+              Sign out
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 function AuthPage(props: {
   theme: "light" | "dark";
   setTheme: (value: "light" | "dark") => void;
@@ -486,6 +526,7 @@ function AuthPage(props: {
 
   return (
     <main className="page">
+      <NavBar isAuthed={false} theme={theme} setTheme={setTheme} />
       <PageHeader theme={theme} setTheme={setTheme} showSignOut={false} />
 
       <section className="card auth-card">
@@ -618,6 +659,7 @@ function ForumPage(props: {
 
   return (
     <main className="page">
+      <NavBar isAuthed={true} onSignOut={onSignOut} theme={theme} setTheme={setTheme} />
       <PageHeader theme={theme} setTheme={setTheme} showSignOut={true} onSignOut={onSignOut} />
 
       <section className="card auth-card">

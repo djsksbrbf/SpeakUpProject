@@ -83,11 +83,87 @@ h4 {
 .page {
   max-width: 980px;
   margin: 0 auto;
-  padding: 2rem 1.2rem 3.5rem;
+  padding: 0 1.2rem 3.5rem;
   animation: fade-up 460ms ease-out both;
 }
 
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+.nav-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0.9rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: #f8fbff;
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent-2) 60%, var(--accent-3) 40%) 100%);
+  box-shadow: var(--shadow);
+}
+
+.brand-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.brand-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+
+.nav-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.nav-button {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+}
+
 .hero {
+  margin-top: 1.8rem;
   margin-bottom: 1.4rem;
   padding: 1.2rem 1.4rem 1.5rem;
   border-radius: var(--radius-lg);
@@ -377,6 +453,10 @@ button:hover {
 @media (max-width: 640px) {
   .page {
     padding: 1rem 0.7rem 2.2rem;
+  }
+
+  .nav-inner {
+    padding: 0.8rem 0.7rem;
   }
 
   .card {
