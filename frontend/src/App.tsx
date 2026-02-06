@@ -77,6 +77,11 @@ export default function App() {
   const [replyTargetByThread, setReplyTargetByThread] = useState<Record<number, number | null>>({});
   const [threadTokens, setThreadTokens] = useState<Record<number, string>>(() => readTokenMap(threadTokenStorageKey));
   const [replyTokens, setReplyTokens] = useState<Record<number, string>>(() => readTokenMap(replyTokenStorageKey));
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authName, setAuthName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
 
   async function loadThreads() {
     setLoading(true);
@@ -219,6 +224,16 @@ export default function App() {
     }
   }
 
+  function handleAuthSubmit(event: FormEvent) {
+    event.preventDefault();
+    setAuthMessage(
+      authMode === "signin"
+        ? "Sign-in submitted (demo only)."
+        : "Sign-up submitted (demo only)."
+    );
+    setAuthPassword("");
+  }
+
   return (
     <main className="page">
       <header className="hero">
@@ -235,6 +250,66 @@ export default function App() {
         <h1>SpeakUpProject Forum</h1>
         <p className="subtitle">Post as Anonymous or share your name. Reply directly to any comment.</p>
       </header>
+
+      <section className="card auth-card">
+        <div className="auth-header">
+          <div>
+            <p className="eyebrow">Account</p>
+            <h2>{authMode === "signin" ? "Welcome back" : "Create your account"}</h2>
+            <p className="subtitle">
+              {authMode === "signin"
+                ? "Sign in to manage your posts and notifications."
+                : "Sign up to save your threads and follow replies."}
+            </p>
+          </div>
+          <div className="auth-tabs">
+            <button
+              type="button"
+              className={`auth-tab ${authMode === "signin" ? "active" : ""}`}
+              onClick={() => setAuthMode("signin")}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              className={`auth-tab ${authMode === "signup" ? "active" : ""}`}
+              onClick={() => setAuthMode("signup")}
+            >
+              Sign up
+            </button>
+          </div>
+        </div>
+        <form onSubmit={handleAuthSubmit} className="stack auth-form">
+          <div className="stack">
+            <input
+              required
+              minLength={3}
+              maxLength={60}
+              placeholder="Username"
+              value={authName}
+              onChange={(event) => setAuthName(event.target.value)}
+            />
+            <input
+              required
+              type="email"
+              placeholder="Email address"
+              value={authEmail}
+              onChange={(event) => setAuthEmail(event.target.value)}
+            />
+            <input
+              required
+              type="password"
+              placeholder="Password"
+              value={authPassword}
+              onChange={(event) => setAuthPassword(event.target.value)}
+            />
+          </div>
+          <div className="actions">
+            <button type="submit">{authMode === "signin" ? "Sign in" : "Sign up"}</button>
+            {authMessage && <span className="auth-message">{authMessage}</span>}
+          </div>
+        </form>
+      </section>
 
       <section className="card">
         <h2>Start a Thread</h2>
