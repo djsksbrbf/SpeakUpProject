@@ -293,14 +293,21 @@ export default function App() {
     setAuthLoading(true);
     try {
       const endpoint = authMode === "signin" ? "signin" : "signup";
+      const body =
+        authMode === "signin"
+          ? {
+              username: authName.trim(),
+              password: authPassword,
+            }
+          : {
+              username: authName.trim(),
+              email: authEmail.trim(),
+              password: authPassword,
+            };
       const response = await fetch(`${apiBaseUrl}/auth/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: authName.trim(),
-          email: authEmail.trim(),
-          password: authPassword,
-        }),
+        body: JSON.stringify(body),
       });
       const payload = (await response.json().catch(() => null)) as
         | { detail?: unknown; access_token?: string; user?: AuthUser }
@@ -529,13 +536,15 @@ function AuthPage(props: {
               value={authName}
               onChange={(event) => setAuthName(event.target.value)}
             />
-            <input
-              required
-              type="email"
-              placeholder="Email address"
-              value={authEmail}
-              onChange={(event) => setAuthEmail(event.target.value)}
-            />
+            {authMode === "signup" ? (
+              <input
+                required
+                type="email"
+                placeholder="Email address"
+                value={authEmail}
+                onChange={(event) => setAuthEmail(event.target.value)}
+              />
+            ) : null}
             <input
               required
               type="password"
