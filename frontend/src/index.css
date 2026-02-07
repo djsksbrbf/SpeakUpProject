@@ -232,6 +232,11 @@ h4 {
   cursor: pointer;
 }
 
+.theme-select select option {
+  color: var(--ink);
+  background: var(--surface);
+}
+
 .theme-select select:focus {
   outline: none;
 }
