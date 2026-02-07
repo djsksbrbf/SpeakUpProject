@@ -1,15 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
 
 :root {
-  --bg: #f3efe9;
+  --bg: #f5eff7;
   --ink: #1b1f24;
   --muted: #56606b;
-  --surface: #fdfbf8;
-  --surface-soft: #f2ede5;
-  --line: #e3d7c7;
-  --accent: #3d4fa1;
-  --accent-2: #7a5cc9;
-  --accent-3: #26336b;
+  --surface: #fefbff;
+  --surface-soft: #efe7f6;
+  --line: #e2d7ea;
+  --accent: #5b6eea;
+  --accent-2: #b06ad9;
+  --accent-3: #3146b1;
   --danger: #b42318;
   --radius: 16px;
   --radius-lg: 20px;
