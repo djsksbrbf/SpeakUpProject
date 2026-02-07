@@ -421,6 +421,19 @@ export default function App() {
             </RequireAuth>
           }
         />
+        <Route
+          path="/learn"
+          element={
+            <RequireAuth isAuthed={isAuthed}>
+              <LearnPage
+                theme={theme}
+                setTheme={setTheme}
+                authUser={authUser}
+                onSignOut={handleSignOut}
+              />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<Navigate to={isAuthed ? "/" : "/auth"} replace />} />
       </Routes>
     </BrowserRouter>
@@ -504,6 +517,11 @@ function NavBar(props: {
           {isAuthed ? (
             <a className="nav-link" href="/add">
               Add
+            </a>
+          ) : null}
+          {isAuthed ? (
+            <a className="nav-link" href="/learn">
+              Learn
             </a>
           ) : null}
           <ThemeSelect theme={theme} setTheme={setTheme} />
@@ -777,8 +795,8 @@ function AddThreadPage(props: {
       {successMessage && <p className="success">{successMessage}</p>}
       {error && <p className="error">{error}</p>}
 
-      <section className="card">
-        <h2>Start a Thread</h2>
+        <section className="card">
+          <h2>Start a Thread</h2>
         <form onSubmit={onCreateThread} className="stack">
           <input
             required
@@ -806,6 +824,105 @@ function AddThreadPage(props: {
           </label>
           <button type="submit">Post Thread</button>
         </form>
+        </section>
+      </main>
+    );
+  }
+
+function LearnPage(props: {
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
+  authUser: AuthUser | null;
+  onSignOut: () => void;
+}) {
+  const { theme, setTheme, authUser, onSignOut } = props;
+  const slides = [
+    {
+      title: "What is bullying?",
+      body:
+        "Bullying is repeated behavior that harms, intimidates, or excludes someone. It can be physical, verbal, social, or digital.",
+      tags: ["Definition", "Impact"],
+    },
+    {
+      title: "Types of bullying",
+      body:
+        "Physical (hitting, pushing), verbal (name-calling), social (spreading rumors, exclusion), and cyberbullying (online harassment).",
+      tags: ["Physical", "Verbal", "Social", "Cyber"],
+    },
+    {
+      title: "Warning signs",
+      body:
+        "Changes in mood, avoiding school, unexplained injuries, loss of belongings, sleep issues, or withdrawing from friends.",
+      tags: ["Behavior", "Health"],
+    },
+    {
+      title: "How to respond",
+      body:
+        "Stay calm, document what happened, seek support, and report it to a trusted adult, school, or platform.",
+      tags: ["Safety", "Support"],
+    },
+    {
+      title: "Bystander actions",
+      body:
+        "Speak up if safe, check in with the target, report the incident, and avoid amplifying the behavior.",
+      tags: ["Bystander", "Community"],
+    },
+    {
+      title: "Prevention tips",
+      body:
+        "Build inclusive norms, encourage empathy, and create clear reporting channels. Small acts of support matter.",
+      tags: ["Prevention", "Culture"],
+    },
+  ];
+  const [index, setIndex] = useState(0);
+  const slide = slides[index];
+
+  return (
+    <main className="page">
+      <NavBar isAuthed={true} onSignOut={onSignOut} theme={theme} setTheme={setTheme} />
+      <PageHeader theme={theme} setTheme={setTheme} showSignOut={true} onSignOut={onSignOut} />
+
+      <section className="card auth-card">
+        <div>
+          <p className="eyebrow">Signed in</p>
+          <h2>Welcome, {authUser?.username}</h2>
+          <p className="subtitle">{authUser?.email}</p>
+        </div>
+      </section>
+
+      <section className="card slides-card">
+        <div className="slides-header">
+          <div>
+            <p className="eyebrow">Learning Hub</p>
+            <h2>Understanding Bullying</h2>
+            <p className="subtitle">Use these slides to learn about types of bullying and how to respond.</p>
+          </div>
+          <div className="slides-progress">
+            Slide {index + 1} of {slides.length}
+          </div>
+        </div>
+
+        <article className="slide">
+          <h3>{slide.title}</h3>
+          <p>{slide.body}</p>
+          <div className="slide-tags">
+            {slide.tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+        </article>
+
+        <div className="slides-actions">
+          <button type="button" className="ghost" onClick={() => setIndex((prev) => Math.max(prev - 1, 0))}>
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={() => setIndex((prev) => Math.min(prev + 1, slides.length - 1))}
+          >
+            Next
+          </button>
+        </div>
       </section>
     </main>
   );
