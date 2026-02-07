@@ -76,9 +76,11 @@ function formatDate(dateString: string): string {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
+  const [theme, setTheme] = useState<"light" | "dark" | "neon" | "classic" | "dusk">(() => {
     const savedTheme = window.localStorage.getItem("forum-theme");
-    if (savedTheme === "light" || savedTheme === "dark") return savedTheme;
+    if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "neon" || savedTheme === "classic" || savedTheme === "dusk") {
+      return savedTheme;
+    }
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -431,9 +433,28 @@ function RequireAuth(props: { isAuthed: boolean; children: JSX.Element }) {
   return children;
 }
 
+function ThemeSelect(props: {
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
+}) {
+  const { theme, setTheme } = props;
+  return (
+    <label className="theme-select">
+      <span>Theme</span>
+      <select value={theme} onChange={(event) => setTheme(event.target.value as typeof theme)}>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="classic">Classic</option>
+        <option value="dusk">Dusk</option>
+        <option value="neon">Neon</option>
+      </select>
+    </label>
+  );
+}
+
 function PageHeader(props: {
-  theme: "light" | "dark";
-  setTheme: (value: "light" | "dark") => void;
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
   showSignOut: boolean;
   onSignOut?: () => void;
 }) {
@@ -449,13 +470,7 @@ function PageHeader(props: {
               Sign out
             </button>
           ) : null}
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            {theme === "light" ? "Dark mode" : "Light mode"}
-          </button>
+          <ThemeSelect theme={theme} setTheme={setTheme} />
         </div>
       </div>
       <h1>SpeakUpProject Forum</h1>
@@ -467,8 +482,8 @@ function PageHeader(props: {
 function NavBar(props: {
   isAuthed: boolean;
   onSignOut?: () => void;
-  theme: "light" | "dark";
-  setTheme: (value: "light" | "dark") => void;
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
 }) {
   const { isAuthed, onSignOut, theme, setTheme } = props;
 
@@ -491,13 +506,7 @@ function NavBar(props: {
               Add
             </a>
           ) : null}
-          <button
-            type="button"
-            className="ghost nav-button"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            {theme === "light" ? "Dark mode" : "Light mode"}
-          </button>
+          <ThemeSelect theme={theme} setTheme={setTheme} />
           {isAuthed ? (
             <button type="button" className="ghost nav-button" onClick={onSignOut}>
               Sign out
@@ -510,8 +519,8 @@ function NavBar(props: {
 }
 
 function AuthPage(props: {
-  theme: "light" | "dark";
-  setTheme: (value: "light" | "dark") => void;
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
   authMode: "signin" | "signup";
   setAuthMode: (value: "signin" | "signup") => void;
   authName: string;
@@ -622,8 +631,8 @@ function AuthPage(props: {
 }
 
 function ForumPage(props: {
-  theme: "light" | "dark";
-  setTheme: (value: "light" | "dark") => void;
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
   authUser: AuthUser | null;
   onSignOut: () => void;
   error: string | null;
@@ -722,8 +731,8 @@ function ForumPage(props: {
 }
 
 function AddThreadPage(props: {
-  theme: "light" | "dark";
-  setTheme: (value: "light" | "dark") => void;
+  theme: "light" | "dark" | "neon" | "classic" | "dusk";
+  setTheme: (value: "light" | "dark" | "neon" | "classic" | "dusk") => void;
   authUser: AuthUser | null;
   onSignOut: () => void;
   threadTitle: string;
