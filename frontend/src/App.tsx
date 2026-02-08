@@ -850,10 +850,22 @@ function LearnPage(props: {
       tags: ["Physical", "Verbal", "Social", "Cyber"],
     },
     {
+      title: "Why it happens",
+      body:
+        "Bullying can stem from insecurity, a need for control, learned behavior, or unhealthy group dynamics. Understanding causes helps adults and peers intervene early.",
+      tags: ["Causes", "Intervention"],
+    },
+    {
       title: "Warning signs",
       body:
         "Changes in mood, avoiding school, unexplained injuries, loss of belongings, sleep issues, or withdrawing from friends.",
       tags: ["Behavior", "Health"],
+    },
+    {
+      title: "Who to talk to",
+      body:
+        "Reach out to a trusted adult, school counselor, teacher, coach, or a community hotline. Online platforms also have reporting tools.",
+      tags: ["Support", "Resources"],
     },
     {
       title: "How to respond",
@@ -872,6 +884,18 @@ function LearnPage(props: {
       body:
         "Build inclusive norms, encourage empathy, and create clear reporting channels. Small acts of support matter.",
       tags: ["Prevention", "Culture"],
+    },
+    {
+      title: "Cyberbullying safety",
+      body:
+        "Save evidence, block or mute offenders, tighten privacy settings, and report abusive content. Avoid responding in ways that escalate.",
+      tags: ["Online", "Safety"],
+    },
+    {
+      title: "Helping a friend",
+      body:
+        "Listen without judgment, check in regularly, help document incidents, and offer to go with them to report it.",
+      tags: ["Friendship", "Support"],
     },
   ];
   const [index, setIndex] = useState(0);
