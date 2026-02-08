@@ -898,6 +898,50 @@ function LearnPage(props: {
       tags: ["Friendship", "Support"],
     },
   ];
+  const articles = [
+    {
+      title: "What Is Bullying",
+      source: "StopBullying.gov",
+      summary:
+        "Defines bullying, outlines the power imbalance and repetition, and explains common forms like verbal, social, and physical bullying.",
+      url: "https://www.stopbullying.gov/bullying/what-is-bullying",
+    },
+    {
+      title: "Warning Signs for Bullying",
+      source: "StopBullying.gov",
+      summary:
+        "Lists common warning signs for both being bullied and bullying others, and stresses the importance of talking to a trusted adult.",
+      url: "https://www.stopbullying.gov/bullying/warning-signs",
+    },
+    {
+      title: "Get Help Now",
+      source: "StopBullying.gov",
+      summary:
+        "Practical steps for getting help, including who to contact at school and what to do if someone is in immediate danger.",
+      url: "https://www.stopbullying.gov/resources/get-help-now",
+    },
+    {
+      title: "Youth Violence (includes bullying)",
+      source: "World Health Organization",
+      summary:
+        "Overview of youth violence and how bullying fits within it, plus impacts and key risk factors.",
+      url: "https://www.who.int/en/news-room/fact-sheets/detail/youth-violence",
+    },
+    {
+      title: "Violence Against Children (Fact Sheet)",
+      source: "World Health Organization",
+      summary:
+        "Defines bullying (including cyberbullying) as unwanted aggressive behavior with repeated harm, often occurring in schools and online.",
+      url: "https://www.who.int/news-room/fact-sheets/detail/violence-against-children",
+    },
+    {
+      title: "Cyberbullying Trends in Europe (HBSC Study)",
+      source: "WHO/Europe",
+      summary:
+        "Highlights recent findings on cyberbullying prevalence among school-aged children and trends since 2018.",
+      url: "https://www.who.int/europe/news-room/27-03-2024-one-in-six-school-aged-children-experiences-cyberbullying--finds-new-who-europe-study",
+    },
+  ];
   const [index, setIndex] = useState(0);
   const slide = slides[index];
 
@@ -946,6 +990,28 @@ function LearnPage(props: {
           >
             Next
           </button>
+        </div>
+      </section>
+
+      <section className="card articles-card">
+        <div>
+          <p className="eyebrow">Further Reading</p>
+          <h2>Trusted Articles</h2>
+          <p className="subtitle">Short summaries with direct links to WHO and StopBullying.gov resources.</p>
+        </div>
+        <div className="article-list">
+          {articles.map((article) => (
+            <article key={article.url} className="article-item">
+              <div>
+                <h3>{article.title}</h3>
+                <p className="article-source">{article.source}</p>
+              </div>
+              <p className="article-summary">{article.summary}</p>
+              <a className="nav-link article-link" href={article.url} target="_blank" rel="noreferrer">
+                Read article
+              </a>
+            </article>
+          ))}
         </div>
       </section>
     </main>

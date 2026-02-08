@@ -642,6 +642,40 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.articles-card {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.article-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.article-item {
+  padding: 0.95rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.article-source {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.article-summary {
+  margin: 0;
+  color: var(--muted);
+}
+
+.article-link {
+  width: fit-content;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
